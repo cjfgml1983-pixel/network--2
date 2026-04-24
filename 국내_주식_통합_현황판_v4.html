@@ -1,0 +1,264 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>국내 주식 통합 현황판 v4 - 네이버 증권 스타일</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;700;900&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Noto Sans KR', sans-serif; background-color: #f4f6f9; color: #333; }
+        .naver-container { max-width: 1200px; margin: 0 auto; background: white; box-shadow: 0 0 20px rgba(0,0,0,0.05); min-height: 100vh; }
+        .naver-green { color: #03c75a; }
+        .up-color { color: #e52528; } /* 네이버식 상승: 빨강 */
+        .down-color { color: #1763b6; } /* 네이버식 하락: 파랑 */
+        .tab-active { border-bottom: 3px solid #03c75a; color: #03c75a; font-weight: 700; }
+        .table-header { background: #f9fafb; border-top: 1px solid #eee; border-bottom: 1px solid #eee; font-size: 12px; color: #666; }
+        .info-box { border: 1px solid #e1e4e9; border-radius: 8px; background: #fff; }
+        .nav-link:hover { text-decoration: underline; color: #03c75a; }
+    </style>
+</head>
+<body>
+
+    <div class="naver-container flex flex-col">
+        <!-- [상단 헤더] 네이버 증권 느낌의 로고 및 메뉴 -->
+        <header class="h-16 px-6 border-b border-gray-200 flex items-center justify-between shrink-0">
+            <div class="flex items-center gap-6">
+                <h1 class="text-2xl font-black naver-green flex items-center gap-1">
+                    <span class="text-gray-900">NAVER</span> <span class="font-light">증권</span>
+                </h1>
+                <nav class="hidden md:flex gap-6 text-sm font-bold text-gray-600">
+                    <a href="#" class="naver-green border-b-2 border-green-500 pb-5 mt-5">국내증시</a>
+                    <a href="#" class="nav-link pb-5 mt-5">해외증시</a>
+                    <a href="#" class="nav-link pb-5 mt-5">시장지표</a>
+                    <a href="#" class="nav-link pb-5 mt-5">투자정보</a>
+                </nav>
+            </div>
+            <div class="flex items-center gap-4">
+                <div class="relative">
+                    <input type="text" placeholder="종목명 또는 코드 입력" class="w-64 border border-gray-300 rounded-sm px-3 py-1.5 text-xs focus:outline-none focus:border-green-500">
+                    <button class="absolute right-2 top-2"><i data-lucide="search" class="w-4 h-4 text-gray-400"></i></button>
+                </div>
+            </div>
+        </header>
+
+        <!-- [주요 지수 밴드] -->
+        <section class="bg-gray-50 border-b border-gray-200 px-6 py-4 grid grid-cols-1 md:grid-cols-3 gap-6">
+            <div class="flex flex-col">
+                <span class="text-xs font-bold text-gray-500 mb-1">코스피(KOSPI)</span>
+                <div class="flex items-baseline gap-2">
+                    <span class="text-2xl font-bold up-color">2,750.50</span>
+                    <span class="text-sm up-color font-medium">▲ 32.12 (+1.18%)</span>
+                </div>
+            </div>
+            <div class="flex flex-col">
+                <span class="text-xs font-bold text-gray-500 mb-1">코스닥(KOSDAQ)</span>
+                <div class="flex items-baseline gap-2">
+                    <span class="text-2xl font-bold down-color">890.30</span>
+                    <span class="text-sm down-color font-medium">▼ 4.50 (-0.51%)</span>
+                </div>
+            </div>
+            <div class="flex flex-col">
+                <span class="text-xs font-bold text-gray-500 mb-1">코스피200</span>
+                <div class="flex items-baseline gap-2">
+                    <span class="text-2xl font-bold up-color">365.10</span>
+                    <span class="text-sm up-color font-medium">▲ 2.10 (+0.58%)</span>
+                </div>
+            </div>
+        </section>
+
+        <!-- [메인 콘텐츠] -->
+        <div class="flex-1 flex flex-col p-6 gap-6">
+            
+            <!-- 종목 정보 및 차트 -->
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                <!-- 좌측: 실시간 차트 및 가격 (네이버 종목 상세 느낌) -->
+                <div class="lg:col-span-2 flex flex-col gap-4">
+                    <div class="flex justify-between items-end border-b-2 border-gray-800 pb-2">
+                        <div class="flex items-baseline gap-3">
+                            <h2 class="text-3xl font-black" id="active-name">삼성전자</h2>
+                            <span class="text-gray-500 font-mono text-lg">005930</span>
+                            <span class="text-xs bg-gray-100 px-2 py-0.5 border border-gray-200 text-gray-600">KOSPI</span>
+                        </div>
+                        <div class="text-right">
+                            <span class="text-3xl font-bold up-color">78,500</span>
+                            <div class="text-sm up-color font-bold">전일대비 ▲ 1,200 | +1.55%</div>
+                        </div>
+                    </div>
+
+                    <!-- 멀티 타임프레임 차트 (일/주/월/연) -->
+                    <div class="info-box overflow-hidden flex flex-col h-[450px]">
+                        <div class="flex gap-1 p-2 bg-gray-50 border-b border-gray-200">
+                            <button onclick="updateInterval('D')" class="px-4 py-1.5 text-xs font-bold border border-gray-300 bg-white">일봉</button>
+                            <button onclick="updateInterval('W')" class="px-4 py-1.5 text-xs font-bold border border-gray-300 hover:bg-white transition-all">주봉</button>
+                            <button onclick="updateInterval('M')" class="px-4 py-1.5 text-xs font-bold border border-gray-300 hover:bg-white transition-all">월봉</button>
+                            <button onclick="updateInterval('Y')" class="px-4 py-1.5 text-xs font-bold border border-gray-300 hover:bg-white transition-all">연봉</button>
+                        </div>
+                        <div id="naver-chart" class="flex-1"></div>
+                    </div>
+                </div>
+
+                <!-- 우측: 시장 지표 및 뉴스 -->
+                <div class="flex flex-col gap-6">
+                    <!-- 시간외/장외 거래 현황 -->
+                    <div class="info-box p-4">
+                        <h3 class="text-sm font-bold border-l-4 border-green-500 pl-2 mb-4">시간외 단일가</h3>
+                        <table class="w-full text-xs">
+                            <thead class="table-header">
+                                <tr class="text-left">
+                                    <th class="py-2 px-1">시간</th>
+                                    <th>가격</th>
+                                    <th>대비</th>
+                                    <th class="text-right px-1">거래량</th>
+                                </tr>
+                            </thead>
+                            <tbody class="divide-y divide-gray-100">
+                                <tr><td class="py-2 px-1 text-gray-400">17:58</td><td class="font-bold">78,600</td><td class="up-color">▲ 100</td><td class="text-right px-1">1,250</td></tr>
+                                <tr><td class="py-2 px-1 text-gray-400">17:50</td><td class="font-bold">78,500</td><td>-</td><td class="text-right px-1">540</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <!-- 실시간 뉴스 (국내 중심) -->
+                    <div class="info-box p-4">
+                        <h3 class="text-sm font-bold border-l-4 border-green-500 pl-2 mb-4">주요 뉴스</h3>
+                        <div class="flex flex-col gap-3" id="naver-news">
+                            <!-- 뉴스 리스트 -->
+                            <div class="group cursor-pointer">
+                                <p class="text-[13px] font-medium leading-tight group-hover:underline">[특징주] 삼성전자, 엔비디아 HBM 공급 기대감에 강세</p>
+                                <span class="text-[11px] text-gray-400">머니투데이 · 12분 전</span>
+                            </div>
+                            <div class="group cursor-pointer">
+                                <p class="text-[13px] font-medium leading-tight group-hover:underline">코스피, 외인·기관 매수에 2750선 회복... 반도체 주도</p>
+                                <span class="text-[11px] text-gray-400">연합인포맥스 · 45분 전</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 하단: 100대 기업 재무제표 리스트 -->
+            <div class="info-box">
+                <div class="flex items-center justify-between p-4 border-b border-gray-200 bg-gray-50">
+                    <h3 class="text-sm font-black flex items-center gap-2">
+                        <i data-lucide="award" class="naver-green w-4 h-4"></i> 시가총액 상위 100대 기업 재무 현황 (국내)
+                    </h3>
+                    <span class="text-[11px] text-gray-500 font-bold">기준일: 2024.04.24</span>
+                </div>
+                <div class="overflow-x-auto">
+                    <table class="w-full text-xs text-left">
+                        <thead class="table-header uppercase tracking-tighter">
+                            <tr>
+                                <th class="py-3 px-4">N</th>
+                                <th class="py-3 px-4">종목명</th>
+                                <th class="py-3 px-4">현재가</th>
+                                <th class="py-3 px-4">시가총액(조)</th>
+                                <th class="py-3 px-4">매출액(조)</th>
+                                <th class="py-3 px-4">영업이익(조)</th>
+                                <th class="py-3 px-4">당기순이익(조)</th>
+                                <th class="py-3 px-4">PER</th>
+                                <th class="py-3 px-4">ROE</th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-gray-100" id="top100-list">
+                            <!-- 데이터 렌더링 영역 -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- [하단 푸터] -->
+        <footer class="bg-gray-100 border-t border-gray-200 p-6 text-[11px] text-gray-500">
+            <div class="flex justify-between items-start">
+                <div>
+                    <p class="font-bold mb-1">본 서비스는 네이버 증권 시황 시스템을 참조하여 제작되었습니다.</p>
+                    <p>데이터 제공: TradingView, DART 시스템 | 실시간 정보는 거래소의 실제 데이터와 차이가 발생할 수 있습니다.</p>
+                </div>
+                <div class="text-right">
+                    <span class="bg-green-500 text-white px-2 py-1 rounded-sm font-bold uppercase">System Active</span>
+                </div>
+            </div>
+        </footer>
+    </div>
+
+    <script type="text/javascript" src="https://s3.tradingview.com/tv.js"></script>
+    <script>
+        lucide.createIcons();
+
+        // 1. 차트 설정 (국내 증시 특화)
+        let currentSymbol = "KRX:005930";
+        function initNaverChart(symbol, interval) {
+            new TradingView.widget({
+                "autosize": true,
+                "symbol": symbol,
+                "interval": interval,
+                "timezone": "Asia/Seoul",
+                "theme": "light", // 네이버 스타일을 위해 라이트 모드 사용
+                "style": "1",
+                "locale": "ko",
+                "toolbar_bg": "#f1f3f6",
+                "enable_publishing": false,
+                "hide_side_toolbar": false,
+                "allow_symbol_change": true,
+                "container_id": "naver-chart"
+            });
+        }
+        initNaverChart(currentSymbol, "D");
+
+        function updateInterval(interval) {
+            initNaverChart(currentSymbol, interval);
+        }
+
+        // 2. 국내 시총 상위 100대 기업 데이터 (네이버 증권 시세 기준 모델링)
+        const top100Data = [
+            { n: 1, name: "삼성전자", price: "78,500", cap: "468.6", rev: "258.9", profit: "6.5", net: "15.4", per: "30.5", roe: "12.1%" },
+            { n: 2, name: "SK하이닉스", price: "182,300", cap: "132.7", rev: "32.7", profit: "-7.7", net: "-9.1", per: "N/A", roe: "-15.2%" },
+            { n: 3, name: "LG에너지솔루션", price: "372,500", cap: "87.1", rev: "33.2", profit: "2.1", net: "1.6", per: "55.2", roe: "10.4%" },
+            { n: 4, name: "삼성바이오로직스", price: "784,000", cap: "55.8", rev: "3.6", profit: "1.1", net: "0.8", per: "72.4", roe: "15.3%" },
+            { n: 5, name: "현대차", price: "242,500", cap: "51.8", rev: "162.6", profit: "15.1", net: "12.2", per: "4.5", roe: "18.2%" },
+            { n: 6, name: "기아", price: "115,200", cap: "46.2", rev: "99.8", profit: "11.6", net: "8.7", per: "5.1", roe: "20.1%" },
+            { n: 7, name: "셀트리온", price: "178,900", cap: "38.5", rev: "2.1", profit: "0.6", net: "0.5", per: "62.1", roe: "8.5%" },
+            { n: 8, name: "POSCO홀딩스", price: "385,000", cap: "32.5", rev: "77.1", profit: "3.5", net: "2.9", per: "11.2", roe: "6.2%" }
+        ];
+
+        const top100List = document.getElementById('top100-list');
+        top100List.innerHTML = top100Data.map(i => `
+            <tr class="hover:bg-blue-50 transition-all cursor-pointer">
+                <td class="py-3 px-4 text-gray-400 font-mono">${i.n}</td>
+                <td class="py-3 px-4 font-bold text-gray-900">${i.name}</td>
+                <td class="py-3 px-4 font-bold up-color">${i.price}</td>
+                <td class="py-3 px-4 font-bold text-gray-600">${i.cap}</td>
+                <td class="py-3 px-4">${i.rev}</td>
+                <td class="py-3 px-4 up-color font-bold">${i.profit}</td>
+                <td class="py-3 px-4">${i.net}</td>
+                <td class="py-3 px-4">${i.per}</td>
+                <td class="py-3 px-4 naver-green font-bold">${i.roe}</td>
+            </tr>
+        `).join('');
+
+        // 3. 한글 전용 뉴스 렌더링 (TradingView RSS 대신 직접 모델링하여 한글 보장)
+        const newsData = [
+            { title: "[시황] 코스피, 반도체·자동차주 강세에 2750선 상회", time: "15분 전", source: "네이버뉴스" },
+            { title: "삼성전자, 엔비디아향 HBM3E 검증 완료 임박설에 1.5%↑", time: "32분 전", source: "금융경제" },
+            { title: "SK하이닉스, 실적 개선 기대감에 52주 신고가 경신", time: "58분 전", source: "증권신보" },
+            { title: "외국인 투자자, 7거래일 연속 코스피 순매수... 삼전·현대차 집중", time: "1시간 전", source: "연합뉴스" },
+            { title: "ETF 시장, '미국 테크' 대신 '국내 배당주'로 자금 유입 가속", time: "2시간 전", source: "머니투데이" }
+        ];
+
+        const newsContainer = document.getElementById('naver-news');
+        newsContainer.innerHTML = newsData.map(n => `
+            <div class="group cursor-pointer border-b border-gray-100 pb-2">
+                <p class="text-[13px] font-medium leading-tight group-hover:underline group-hover:text-green-600">${n.title}</p>
+                <div class="flex items-center gap-2 mt-1">
+                    <span class="text-[11px] text-gray-400 font-bold">${n.source}</span>
+                    <span class="text-[11px] text-gray-300">|</span>
+                    <span class="text-[11px] text-gray-400">${n.time}</span>
+                </div>
+            </div>
+        `).join('');
+
+    </script>
+</body>
+</html>
