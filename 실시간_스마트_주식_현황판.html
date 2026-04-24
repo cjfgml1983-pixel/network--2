@@ -1,0 +1,208 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>StockBoard Pro - 실시간 주식 통합 현황판</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;700;900&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Noto Sans KR', sans-serif;
+            background-color: #0f172a;
+            color: #f8fafc;
+        }
+        .up-color { color: #f43f5e; } 
+        .down-color { color: #3b82f6; }
+        .glass-panel {
+            background: rgba(30, 41, 59, 0.7);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        .tradingview-widget-container {
+            height: 100%;
+            width: 100%;
+        }
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-track { background: #1e293b; }
+        ::-webkit-scrollbar-thumb { background: #334155; border-radius: 3px; }
+    </style>
+</head>
+<body class="overflow-hidden h-screen flex flex-col">
+
+    <!-- Top Real-time Ticker (Global Indices) -->
+    <div class="h-12 glass-panel border-b border-white/5 flex items-center overflow-hidden">
+        <!-- TradingView Ticker Widget -->
+        <div class="tradingview-widget-container">
+            <div class="tradingview-widget-container__widget"></div>
+            <script type="text/javascript" src="https://s3.tradingview.com/external-embedding/embed-widget-ticker-tape.js" async>
+            {
+            "symbols": [
+                { "proName": "FOREXCOM:SPX500", "title": "S&P 500" },
+                { "proName": "FOREXCOM:NSXUSD", "title": "Nasdaq 100" },
+                { "proName": "KRX:KOSPI", "title": "코스피" },
+                { "proName": "KRX:KOSDAQ", "title": "코스닥" },
+                { "proName": "FX_IDC:USDKRW", "title": "원/달러 환율" },
+                { "description": "비트코인", "proName": "BINANCE:BTCUSDT" }
+            ],
+            "showSymbolLogo": true,
+            "colorTheme": "dark",
+            "isTransparent": true,
+            "displayMode": "adaptive",
+            "locale": "ko"
+            }
+            </script>
+        </div>
+    </div>
+
+    <!-- Main Content Area -->
+    <div class="flex-1 flex overflow-hidden">
+        
+        <!-- Sidebar: Market Overview -->
+        <aside class="w-80 glass-panel border-r border-white/5 flex flex-col hidden lg:flex">
+            <div class="p-6 border-b border-white/5">
+                <h2 class="text-xl font-black flex items-center gap-2">
+                    <i data-lucide="trending-up" class="text-blue-500"></i> StockBoard
+                </h2>
+            </div>
+            
+            <div class="flex-1 overflow-y-auto p-4 space-y-4">
+                <div class="text-xs font-bold text-slate-500 uppercase tracking-widest px-2">실시간 인기 종목</div>
+                
+                <!-- TradingView Market Overview Widget -->
+                <div class="tradingview-widget-container" style="height: 600px;">
+                    <div class="tradingview-widget-container__widget"></div>
+                    <script type="text/javascript" src="https://s3.tradingview.com/external-embedding/embed-widget-market-overview.js" async>
+                    {
+                    "colorTheme": "dark",
+                    "dateRange": "1D",
+                    "showChart": false,
+                    "locale": "ko",
+                    "largeChartUrl": "",
+                    "isTransparent": true,
+                    "showSymbolLogo": true,
+                    "showFloatingTooltip": false,
+                    "width": "100%",
+                    "height": "100%",
+                    "tabs": [
+                        {
+                        "title": "국내 대형주",
+                        "symbols": [
+                            { "s": "KRX:005930", "d": "삼성전자" },
+                            { "s": "KRX:000660", "d": "SK하이닉스" },
+                            { "s": "KRX:373220", "d": "LG에너지솔루션" },
+                            { "s": "KRX:005380", "d": "현대차" },
+                            { "s": "KRX:035420", "d": "NAVER" }
+                        ]
+                        },
+                        {
+                        "title": "미국 기술주",
+                        "symbols": [
+                            { "s": "NASDAQ:AAPL", "d": "애플" },
+                            { "s": "NASDAQ:TSLA", "d": "테슬라" },
+                            { "s": "NASDAQ:NVDA", "d": "엔비디아" },
+                            { "s": "NASDAQ:MSFT", "d": "마이크로소프트" },
+                            { "s": "NASDAQ:GOOGL", "d": "구글" }
+                        ]
+                        }
+                    ]
+                    }
+                    </script>
+                </div>
+            </div>
+        </aside>
+
+        <!-- Main Chart & Details -->
+        <main class="flex-1 flex flex-col bg-slate-950">
+            <!-- Header for Selected Stock -->
+            <div class="p-6 glass-panel flex justify-between items-center">
+                <div>
+                    <div class="flex items-center gap-3">
+                        <h3 class="text-2xl font-black" id="active-stock-name">삼성전자</h3>
+                        <span class="text-slate-500 font-bold">KRX: 005930</span>
+                        <span class="px-2 py-0.5 bg-green-500/10 text-green-500 text-[10px] font-bold rounded">실시간 데이터 연동됨</span>
+                    </div>
+                </div>
+                <div class="flex gap-3">
+                    <button class="px-4 py-2 bg-blue-600 text-white rounded-xl text-sm font-bold hover:bg-blue-500 transition-all">관심종목 추가</button>
+                    <button onclick="toggleFinancials()" class="px-4 py-2 bg-slate-800 text-white rounded-xl text-sm font-bold border border-white/10 hover:bg-slate-700 transition-all">재무제표 보기</button>
+                </div>
+            </div>
+
+            <!-- Advanced Real-time Chart -->
+            <div class="flex-1 relative">
+                <div id="tradingview_main" class="absolute inset-0"></div>
+                <!-- TradingView Advanced Chart Script -->
+                <script type="text/javascript" src="https://s3.tradingview.com/tv.js"></script>
+                <script type="text/javascript">
+                new TradingView.widget({
+                    "autosize": true,
+                    "symbol": "KRX:005930",
+                    "interval": "D",
+                    "timezone": "Asia/Seoul",
+                    "theme": "dark",
+                    "style": "1",
+                    "locale": "ko",
+                    "toolbar_bg": "#f1f3f6",
+                    "enable_publishing": false,
+                    "allow_symbol_change": true,
+                    "container_id": "tradingview_main"
+                });
+                </script>
+            </div>
+        </main>
+
+        <!-- Right Panel: News & Financials -->
+        <aside class="w-96 glass-panel border-l border-white/5 flex flex-col hidden xl:flex">
+            <div class="p-6 border-b border-white/5">
+                <h3 class="text-sm font-bold text-slate-500 uppercase tracking-widest flex items-center gap-2">
+                    <i data-lucide="newspaper" class="w-4 h-4 text-blue-500"></i> 실시간 시장 뉴스
+                </h3>
+            </div>
+            
+            <div class="flex-1 overflow-hidden">
+                <!-- TradingView News Widget -->
+                <div class="tradingview-widget-container">
+                    <div class="tradingview-widget-container__widget"></div>
+                    <script type="text/javascript" src="https://s3.tradingview.com/external-embedding/embed-widget-timeline.js" async>
+                    {
+                    "feedMode": "all_symbols",
+                    "colorTheme": "dark",
+                    "isTransparent": true,
+                    "displayMode": "regular",
+                    "width": "100%",
+                    "height": "100%",
+                    "locale": "ko"
+                    }
+                    </script>
+                </div>
+            </div>
+        </aside>
+    </div>
+
+    <!-- Bottom Status Bar -->
+    <footer class="h-8 glass-panel border-t border-white/5 flex items-center justify-between px-6 text-[10px] font-bold text-slate-500">
+        <div class="flex items-center gap-4">
+            <span class="flex items-center gap-1"><span class="w-2 h-2 bg-green-500 rounded-full"></span> 시스템 정상</span>
+            <span>데이터 출처: TradingView Real-time Data Feed</span>
+        </div>
+        <div>최종 업데이트: <span id="current-time"></span></div>
+    </footer>
+
+    <script>
+        function updateTime() {
+            const now = new Date();
+            document.getElementById('current-time').innerText = now.toLocaleString('ko-KR');
+        }
+        setInterval(updateTime, 1000);
+        updateTime();
+        
+        lucide.createIcons();
+
+        function toggleFinancials() {
+            alert('재무제표 센터는 현재 종목(삼성전자)의 실시간 공시 데이터와 연동되어 준비 중입니다.');
+        }
+    </script>
+</body>
+</html>

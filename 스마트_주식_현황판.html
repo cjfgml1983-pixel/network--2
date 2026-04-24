@@ -1,0 +1,438 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>StockBoard - 스마트 주식 통합 현황판</title>
+    <!-- Tailwind CSS for modern layout -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <!-- Google Fonts: Pretendard or Noto Sans KR -->
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;700;900&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Noto Sans KR', sans-serif;
+            background-color: #f8fafc;
+            color: #1e293b;
+        }
+        .up-color { color: #ef4444; } /* 빨강 */
+        .down-color { color: #3b82f6; } /* 파랑 */
+        .up-bg { background-color: #fef2f2; }
+        .down-bg { background-color: #eff6ff; }
+        
+        .sidebar-item.active {
+            background-color: #e2e8f0;
+            border-left: 4px solid #2563eb;
+            color: #2563eb;
+            font-weight: 700;
+        }
+        
+        .chart-container {
+            position: relative;
+            height: 300px;
+            width: 100%;
+            background: linear-gradient(to bottom, #ffffff, #f1f5f9);
+            border-radius: 12px;
+            overflow: hidden;
+        }
+
+        .scroll-hide::-webkit-scrollbar { display: none; }
+        .scroll-hide { -ms-overflow-style: none; scrollbar-width: none; }
+
+        .glass-card {
+            background: rgba(255, 255, 255, 0.8);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(226, 232, 240, 0.8);
+        }
+
+        @keyframes pulse-soft {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.7; }
+        }
+        .live-indicator {
+            width: 8px;
+            height: 8px;
+            background-color: #22c55e;
+            border-radius: 50%;
+            display: inline-block;
+            animation: pulse-soft 2s infinite;
+        }
+
+        /* Responsive adjustments */
+        @media (max-width: 1024px) {
+            .main-layout { grid-template-columns: 1fr; }
+            .sidebar { display: none; }
+        }
+    </style>
+</head>
+<body class="bg-slate-50 min-h-screen">
+
+    <!-- Top Navigation -->
+    <nav class="sticky top-0 z-50 glass-card px-6 py-3 flex items-center justify-between shadow-sm">
+        <div class="flex items-center gap-2">
+            <div class="bg-blue-600 p-2 rounded-lg">
+                <i data-lucide="line-chart" class="text-white w-6 h-6"></i>
+            </div>
+            <h1 class="text-xl font-black text-slate-800 tracking-tight">StockBoard <span class="text-blue-600">v1.0</span></h1>
+        </div>
+        
+        <div class="hidden md:flex items-center gap-6">
+            <div class="flex items-center gap-2 text-sm font-medium">
+                <span class="text-slate-500">KOSPI</span>
+                <span class="up-color">2,654.28</span>
+                <span class="up-color text-xs">+0.42%</span>
+            </div>
+            <div class="flex items-center gap-2 text-sm font-medium">
+                <span class="text-slate-500">KOSDAQ</span>
+                <span class="down-color">867.21</span>
+                <span class="down-color text-xs">-0.15%</span>
+            </div>
+            <div class="flex items-center gap-2 text-sm font-medium">
+                <span class="text-slate-500">USD/KRW</span>
+                <span class="up-color">1,342.50</span>
+            </div>
+        </div>
+
+        <div class="flex items-center gap-4">
+            <div class="relative">
+                <input type="text" placeholder="종목명 또는 티커 검색" class="bg-slate-100 border-none rounded-full px-4 py-2 text-sm w-48 md:w-64 focus:ring-2 focus:ring-blue-500 transition-all outline-none">
+                <i data-lucide="search" class="absolute right-3 top-2.5 w-4 h-4 text-slate-400"></i>
+            </div>
+            <button class="p-2 rounded-full hover:bg-slate-100"><i data-lucide="bell" class="w-5 h-5 text-slate-600"></i></button>
+            <div class="w-8 h-8 bg-slate-300 rounded-full"></div>
+        </div>
+    </nav>
+
+    <div class="max-w-[1600px] mx-auto p-4 md:p-6 grid grid-cols-12 gap-6 main-layout">
+        
+        <!-- Sidebar: Watchlist & Categories -->
+        <aside class="col-span-12 lg:col-span-3 space-y-6 sidebar">
+            <div class="bg-white rounded-2xl p-4 shadow-sm border border-slate-200">
+                <h3 class="text-sm font-bold text-slate-400 uppercase tracking-wider mb-4 px-2">시장 분류</h3>
+                <nav class="space-y-1">
+                    <button onclick="changeMarket('domestic')" id="btn-domestic" class="sidebar-item active w-full flex items-center justify-between px-3 py-3 rounded-xl transition-all">
+                        <div class="flex items-center gap-3"><i data-lucide="globe"></i> <span>국내 주식</span></div>
+                        <span class="text-xs bg-slate-100 px-2 py-1 rounded text-slate-500">KOSPI/KOSDAQ</span>
+                    </button>
+                    <button onclick="changeMarket('overseas')" id="btn-overseas" class="sidebar-item w-full flex items-center justify-between px-3 py-3 rounded-xl transition-all">
+                        <div class="flex items-center gap-3"><i data-lucide="landmark"></i> <span>해외 주식</span></div>
+                        <span class="text-xs bg-slate-100 px-2 py-1 rounded text-slate-500">NASDAQ/NYSE</span>
+                    </button>
+                    <button onclick="changeMarket('etf')" id="btn-etf" class="sidebar-item w-full flex items-center justify-between px-3 py-3 rounded-xl transition-all">
+                        <div class="flex items-center gap-3"><i data-lucide="layers"></i> <span>테마별 ETF</span></div>
+                        <span class="text-xs bg-slate-100 px-2 py-1 rounded text-slate-500">KODEX/TIGER</span>
+                    </button>
+                </nav>
+            </div>
+
+            <div class="bg-white rounded-2xl p-4 shadow-sm border border-slate-200">
+                <div class="flex items-center justify-between mb-4 px-2">
+                    <h3 class="text-sm font-bold text-slate-400 uppercase tracking-wider">나의 관심종목</h3>
+                    <button class="text-blue-600 text-xs font-bold">+ 추가</button>
+                </div>
+                <div class="space-y-3" id="watchlist">
+                    <!-- Watchlist items loaded by JS -->
+                </div>
+            </div>
+        </aside>
+
+        <!-- Main Content: Charts & Info -->
+        <main class="col-span-12 lg:col-span-6 space-y-6">
+            <!-- Stock Detail Header -->
+            <div class="bg-white rounded-3xl p-6 shadow-sm border border-slate-200" id="stock-header">
+                <div class="flex justify-between items-start mb-6">
+                    <div>
+                        <div class="flex items-center gap-3 mb-1">
+                            <h2 class="text-3xl font-black tracking-tight" id="main-stock-name">삼성전자</h2>
+                            <span class="text-slate-400 font-bold" id="main-stock-ticker">005930</span>
+                            <span class="bg-slate-100 text-slate-600 text-[10px] px-2 py-1 rounded font-bold">KOSPI 1위</span>
+                        </div>
+                        <div class="flex items-baseline gap-3">
+                            <span class="text-4xl font-black up-color" id="main-stock-price">78,400</span>
+                            <span class="text-lg font-bold up-color flex items-center"><i data-lucide="chevron-up" class="w-5 h-5"></i> 1,200 (1.55%)</span>
+                        </div>
+                    </div>
+                    <div class="text-right">
+                        <div class="text-sm font-bold text-slate-500 mb-1 flex items-center justify-end gap-2">
+                            <span class="live-indicator"></span> 실시간 장중
+                        </div>
+                        <div class="text-xs text-slate-400">거래량 12,548,210주</div>
+                        <div class="mt-2 flex gap-2 justify-end">
+                            <button class="px-3 py-1 bg-blue-50 text-blue-600 rounded-lg text-xs font-bold border border-blue-100">시간외 시세</button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Timeframe Selectors -->
+                <div class="flex gap-2 mb-4">
+                    <button class="px-4 py-1.5 rounded-full text-xs font-bold bg-slate-800 text-white">일봉</button>
+                    <button class="px-4 py-1.5 rounded-full text-xs font-bold bg-slate-100 text-slate-500 hover:bg-slate-200">주봉</button>
+                    <button class="px-4 py-1.5 rounded-full text-xs font-bold bg-slate-100 text-slate-500 hover:bg-slate-200">월봉</button>
+                    <button class="px-4 py-1.5 rounded-full text-xs font-bold bg-slate-100 text-slate-500 hover:bg-slate-200">연봉</button>
+                </div>
+
+                <!-- Chart Placeholder (Mockup) -->
+                <div class="chart-container flex items-end justify-between px-4 pb-4 gap-1">
+                    <!-- Random Bar Simulation -->
+                    <div class="w-full h-[60%] bg-red-100 border-t-2 border-red-500 rounded-t-sm"></div>
+                    <div class="w-full h-[65%] bg-red-100 border-t-2 border-red-500 rounded-t-sm"></div>
+                    <div class="w-full h-[55%] bg-blue-100 border-t-2 border-blue-500 rounded-t-sm"></div>
+                    <div class="w-full h-[70%] bg-red-100 border-t-2 border-red-500 rounded-t-sm"></div>
+                    <div class="w-full h-[80%] bg-red-100 border-t-2 border-red-500 rounded-t-sm"></div>
+                    <div class="w-full h-[75%] bg-blue-100 border-t-2 border-blue-500 rounded-t-sm"></div>
+                    <div class="w-full h-[90%] bg-red-100 border-t-2 border-red-500 rounded-t-sm"></div>
+                </div>
+            </div>
+
+            <!-- Summary Financials for Quick View -->
+            <div class="bg-white rounded-3xl p-6 shadow-sm border border-slate-200">
+                <h3 class="text-lg font-bold mb-4 flex items-center gap-2">
+                    <i data-lucide="file-text" class="text-blue-600"></i> 핵심 투자 지표
+                </h3>
+                <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+                    <div class="p-4 bg-slate-50 rounded-2xl border border-slate-100">
+                        <div class="text-xs font-bold text-slate-400 mb-1">PER (주가수익비율)</div>
+                        <div class="text-lg font-black text-slate-700">12.5배</div>
+                        <div class="text-[10px] text-blue-500 font-bold">업종평균 15.2배</div>
+                    </div>
+                    <div class="p-4 bg-slate-50 rounded-2xl border border-slate-100">
+                        <div class="text-xs font-bold text-slate-400 mb-1">PBR (주가순자산비율)</div>
+                        <div class="text-lg font-black text-slate-700">1.45배</div>
+                    </div>
+                    <div class="p-4 bg-slate-50 rounded-2xl border border-slate-100">
+                        <div class="text-xs font-bold text-slate-400 mb-1">ROE (자기자본이익률)</div>
+                        <div class="text-lg font-black text-slate-700">13.2%</div>
+                    </div>
+                    <div class="p-4 bg-slate-50 rounded-2xl border border-slate-100">
+                        <div class="text-xs font-bold text-slate-400 mb-1">배당수익률</div>
+                        <div class="text-lg font-black text-slate-700">2.1%</div>
+                    </div>
+                </div>
+            </div>
+        </main>
+
+        <!-- Right Panel: News & Financial Center -->
+        <aside class="col-span-12 lg:col-span-3 space-y-6">
+            <!-- Real-time News -->
+            <div class="bg-white rounded-2xl p-4 shadow-sm border border-slate-200 h-[450px] flex flex-direction-column">
+                <h3 class="text-sm font-bold text-slate-400 uppercase tracking-wider mb-4 px-2 flex items-center gap-2">
+                    <i data-lucide="newspaper" class="w-4 h-4"></i> 실시간 투자 뉴스
+                </h3>
+                <div class="space-y-4 overflow-y-auto pr-2 scroll-hide flex-1" id="news-feed">
+                    <!-- News items loaded by JS -->
+                </div>
+            </div>
+
+            <!-- Top 100 Financial Center Trigger -->
+            <button onclick="openFinancialCenter()" class="w-full bg-slate-800 text-white rounded-2xl p-5 shadow-lg flex items-center justify-between hover:bg-slate-700 transition-all group">
+                <div>
+                    <div class="text-xs font-bold text-slate-400 mb-1">재무 데이터 분석</div>
+                    <div class="text-lg font-black">시총 100대 기업</div>
+                </div>
+                <div class="bg-blue-600 p-2 rounded-xl group-hover:scale-110 transition-transform">
+                    <i data-lucide="database" class="w-6 h-6"></i>
+                </div>
+            </button>
+        </aside>
+
+    </div>
+
+    <!-- Financial Center Modal -->
+    <div id="financial-modal" class="fixed inset-0 z-[100] hidden">
+        <div class="absolute inset-0 bg-slate-900/60 backdrop-blur-sm" onclick="closeFinancialCenter()"></div>
+        <div class="absolute inset-4 md:inset-10 bg-white rounded-[40px] shadow-2xl overflow-hidden flex flex-col border border-white/20">
+            <div class="p-6 border-bottom bg-slate-50 flex justify-between items-center">
+                <div class="flex items-center gap-4">
+                    <h2 class="text-2xl font-black text-slate-800">100대 기업 통합 재무제표 센터</h2>
+                    <div class="flex bg-white rounded-full p-1 border border-slate-200">
+                        <button class="px-6 py-1.5 bg-blue-600 text-white rounded-full text-sm font-bold">국내 100위</button>
+                        <button class="px-6 py-1.5 text-slate-500 rounded-full text-sm font-bold hover:bg-slate-100">해외 100위</button>
+                    </div>
+                </div>
+                <button onclick="closeFinancialCenter()" class="p-3 hover:bg-slate-200 rounded-full transition-colors">
+                    <i data-lucide="x" class="w-8 h-8 text-slate-400"></i>
+                </button>
+            </div>
+            
+            <div class="flex-1 flex overflow-hidden">
+                <!-- Rank List -->
+                <div class="w-1/3 border-r border-slate-100 overflow-y-auto p-4 space-y-2">
+                    <div class="text-[10px] font-bold text-slate-400 uppercase tracking-widest px-4 mb-2">시가총액 랭킹</div>
+                    <div id="financial-rank-list">
+                        <!-- Rank items -->
+                    </div>
+                </div>
+                <!-- Detail Table -->
+                <div class="flex-1 overflow-y-auto p-8" id="financial-detail">
+                    <div class="flex justify-between items-end mb-8">
+                        <div>
+                            <h3 class="text-4xl font-black text-slate-800 mb-2" id="detail-name">삼성전자</h3>
+                            <p class="text-slate-400 font-bold">연도별 요약 포괄손익계산서 (단위: 억 원)</p>
+                        </div>
+                        <div class="flex gap-2">
+                            <button class="px-4 py-2 border border-slate-200 rounded-xl text-sm font-bold hover:bg-slate-50">연간</button>
+                            <button class="px-4 py-2 border border-slate-200 rounded-xl text-sm font-bold hover:bg-slate-50 text-slate-400">분기</button>
+                        </div>
+                    </div>
+                    
+                    <table class="w-full text-left">
+                        <thead class="bg-slate-50 text-slate-400 text-xs font-bold">
+                            <tr>
+                                <th class="p-4 rounded-tl-2xl">구분 (IFRS 연결)</th>
+                                <th class="p-4">2023.12</th>
+                                <th class="p-4">2022.12</th>
+                                <th class="p-4">2021.12</th>
+                                <th class="p-4 rounded-tr-2xl">전년대비</th>
+                            </tr>
+                        </thead>
+                        <tbody class="text-sm font-medium" id="financial-table-body">
+                            <!-- Table data -->
+                        </tbody>
+                    </table>
+
+                    <div class="mt-8 p-6 bg-blue-50 rounded-3xl border border-blue-100">
+                        <h4 class="text-blue-800 font-bold mb-2 flex items-center gap-2"><i data-lucide="info" class="w-4 h-4"></i> 분석 의견</h4>
+                        <p class="text-blue-600 text-sm leading-relaxed">
+                            삼성전자의 2023년 영업이익은 반도체 업황 둔화로 인해 전년 대비 큰 폭으로 감소했으나, 4분기부터 HBM 수요 및 모바일 출하량 회복세가 뚜렷하게 나타나고 있습니다. 2024년 턴어라운드가 기대되는 구조입니다.
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // --- Mock Data ---
+        const STOCKS = [
+            { name: '삼성전자', ticker: '005930', price: '78,400', change: '+1.55%', trend: 'up', vol: '12M' },
+            { name: 'SK하이닉스', ticker: '000660', price: '182,500', change: '+4.20%', trend: 'up', vol: '5M' },
+            { name: 'LG에너지솔루션', ticker: '373220', price: '372,500', change: '-0.40%', trend: 'down', vol: '800K' },
+            { name: '현대차', ticker: '005380', price: '245,000', change: '+0.82%', trend: 'up', vol: '1.2M' },
+            { name: 'NAVER', ticker: '035420', price: '188,200', change: '-1.25%', trend: 'down', vol: '2M' }
+        ];
+
+        const NEWS = [
+            { time: '1분 전', title: '반도체 수출 21개월 만에 최대... 삼성전자 실적 맑음', category: '시황' },
+            { time: '5분 전', title: '뉴욕증시, 금리인하 신중론에 혼조세 마감... 엔비디아 2%↑', category: '해외' },
+            { time: '12분 전', title: '현대차, 인도 법인 상장 추진... 사상 최대 규모 전망', category: '종목' },
+            { time: '20분 전', title: '미국 프리마켓: 테슬라 자율주행 기대감에 3.5% 급등 중', category: '해외' },
+            { time: '35분 전', title: '2차전지 ETF 수익률 반등... 리튬 가격 안정화 영향', category: 'ETF' }
+        ];
+
+        const FINANCIALS = [
+            { label: '매출액', y23: '2,589,355', y22: '3,022,314', y21: '2,796,048', growth: '-14.3%' },
+            { label: '영업이익', y23: '65,670', y22: '433,766', y21: '516,339', growth: '-84.8%' },
+            { label: '당기순이익', y23: '154,871', y22: '556,541', y21: '399,074', growth: '-72.1%' },
+            { label: '영업이익률', y23: '2.54%', y22: '14.35%', y21: '18.47%', growth: '-11.8%p' }
+        ];
+
+        // --- Core Logic ---
+        function init() {
+            lucide.createIcons();
+            renderWatchlist();
+            renderNews();
+            renderFinancialRank();
+            renderFinancialTable();
+        }
+
+        function renderWatchlist() {
+            const container = document.getElementById('watchlist');
+            container.innerHTML = STOCKS.map(s => `
+                <div class="group flex items-center justify-between p-3 rounded-xl hover:bg-slate-50 border border-transparent hover:border-slate-100 cursor-pointer transition-all" onclick="selectStock('${s.name}', '${s.ticker}', '${s.price}', '${s.change}', '${s.trend}')">
+                    <div class="flex items-center gap-3">
+                        <div class="w-10 h-10 flex items-center justify-center rounded-xl font-black text-xs ${s.trend === 'up' ? 'up-bg up-color' : 'down-bg down-color'}">
+                            ${s.name.charAt(0)}
+                        </div>
+                        <div>
+                            <div class="text-sm font-bold text-slate-800">${s.name}</div>
+                            <div class="text-[10px] font-bold text-slate-400 uppercase">${s.ticker}</div>
+                        </div>
+                    </div>
+                    <div class="text-right">
+                        <div class="text-sm font-black ${s.trend === 'up' ? 'up-color' : 'down-color'}">${s.price}</div>
+                        <div class="text-[10px] font-bold ${s.trend === 'up' ? 'up-color' : 'down-color'}">${s.change}</div>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function renderNews() {
+            const container = document.getElementById('news-feed');
+            container.innerHTML = NEWS.map(n => `
+                <div class="group cursor-pointer">
+                    <div class="flex items-center gap-2 mb-1">
+                        <span class="text-[10px] font-black text-blue-600 bg-blue-50 px-2 py-0.5 rounded">${n.category}</span>
+                        <span class="text-[10px] font-bold text-slate-400">${n.time}</span>
+                    </div>
+                    <h4 class="text-sm font-bold text-slate-700 leading-snug group-hover:text-blue-600 transition-colors">${n.title}</h4>
+                </div>
+            `).join('');
+        }
+
+        function selectStock(name, ticker, price, change, trend) {
+            document.getElementById('main-stock-name').innerText = name;
+            document.getElementById('main-stock-ticker').innerText = ticker;
+            document.getElementById('main-stock-price').innerText = price;
+            
+            const detailName = document.getElementById('detail-name');
+            if(detailName) detailName.innerText = name;
+
+            // Simple indicator to update the header color
+            const headerPrice = document.getElementById('main-stock-price');
+            if(trend === 'up') {
+                headerPrice.className = 'text-4xl font-black up-color';
+            } else {
+                headerPrice.className = 'text-4xl font-black down-color';
+            }
+            lucide.createIcons();
+        }
+
+        function changeMarket(type) {
+            document.querySelectorAll('.sidebar-item').forEach(btn => btn.classList.remove('active'));
+            document.getElementById('btn-' + type).classList.add('active');
+        }
+
+        // Financial Center Logic
+        function openFinancialCenter() {
+            document.getElementById('financial-modal').classList.remove('hidden');
+            document.body.style.overflow = 'hidden';
+        }
+
+        function closeFinancialCenter() {
+            document.getElementById('financial-modal').classList.add('hidden');
+            document.body.style.overflow = 'auto';
+        }
+
+        function renderFinancialRank() {
+            const list = document.getElementById('financial-rank-list');
+            list.innerHTML = STOCKS.map((s, i) => `
+                <div class="flex items-center gap-4 p-4 rounded-2xl hover:bg-slate-50 cursor-pointer ${i===0 ? 'bg-slate-100' : ''}" onclick="selectStock('${s.name}')">
+                    <span class="text-lg font-black text-slate-300 w-6">${i+1}</span>
+                    <div class="flex-1">
+                        <div class="text-sm font-black text-slate-800">${s.name}</div>
+                        <div class="text-[10px] font-bold text-slate-400">시가총액 ${i===0 ? '468조' : (100-i*10)+'조'}</div>
+                    </div>
+                    <i data-lucide="chevron-right" class="w-4 h-4 text-slate-300"></i>
+                </div>
+            `).join('');
+            lucide.createIcons();
+        }
+
+        function renderFinancialTable() {
+            const body = document.getElementById('financial-table-body');
+            body.innerHTML = FINANCIALS.map(f => `
+                <tr class="border-b border-slate-50 hover:bg-slate-50/50 transition-colors">
+                    <td class="p-4 font-bold text-slate-600">${f.label}</td>
+                    <td class="p-4 font-black text-slate-800">${f.y23}</td>
+                    <td class="p-4 text-slate-500">${f.y22}</td>
+                    <td class="p-4 text-slate-500">${f.y21}</td>
+                    <td class="p-4 ${f.growth.startsWith('-') ? 'down-color' : 'up-color'} font-bold">${f.growth}</td>
+                </tr>
+            `).join('');
+        }
+
+        window.onload = init;
+    </script>
+</body>
+</html>
