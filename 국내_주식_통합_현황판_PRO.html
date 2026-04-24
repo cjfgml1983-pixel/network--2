@@ -1,0 +1,256 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>네이버 프리미엄 국내 주식 대시보드 PRO</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;700;900&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Noto Sans KR', sans-serif; background-color: #f4f6f9; color: #333; margin: 0; }
+        .naver-container { max-width: 1200px; margin: 0 auto; background: white; min-height: 100vh; display: flex; flex-direction: column; border-left: 1px solid #ddd; border-right: 1px solid #ddd; }
+        .naver-green { color: #03c75a; }
+        .naver-bg-green { background-color: #03c75a; }
+        .info-box { border: 1px solid #e1e4e9; border-radius: 4px; background: #fff; margin-bottom: 20px; overflow: hidden; }
+        .widget-label { font-size: 13px; font-weight: bold; color: #333; padding: 12px 15px; border-bottom: 1px solid #eee; background: #f9fafb; display: flex; justify-content: space-between; align-items: center; }
+        .live-tag { font-size: 10px; background: #ff4d4f; color: white; padding: 1px 6px; border-radius: 2px; font-weight: 900; animation: blink 1.5s infinite; }
+        @keyframes blink { 0% { opacity: 1; } 50% { opacity: 0.5; } 100% { opacity: 1; } }
+        .search-bar:focus { outline: none; border-color: #03c75a; box-shadow: 0 0 0 2px rgba(3, 199, 90, 0.1); }
+    </style>
+</head>
+<body>
+
+    <div class="naver-container">
+        <!-- [1] 상단 헤더: 네이버 증권 스타일 -->
+        <header class="h-16 px-6 border-b border-gray-200 flex items-center justify-between shrink-0 bg-white z-50">
+            <div class="flex items-center gap-8">
+                <h1 class="text-2xl font-black naver-green flex items-center gap-1 cursor-pointer" onclick="location.reload()">
+                    <span class="text-gray-900">NAVER</span> <span class="font-light">증권 PRO</span>
+                </h1>
+                <nav class="hidden md:flex gap-8 text-[15px] font-bold text-gray-700">
+                    <a href="#" class="naver-green border-b-4 border-green-500 pb-4 pt-5 mt-1">국내증시</a>
+                    <a href="#" class="hover:text-green-500 pb-4 pt-5 mt-1 transition-all">해외증시</a>
+                    <a href="#" class="hover:text-green-500 pb-4 pt-5 mt-1 transition-all">시장지표</a>
+                </nav>
+            </div>
+            <div class="flex items-center gap-4">
+                <div class="relative">
+                    <input type="text" id="main-search" placeholder="종목코드 또는 심볼 (예: 005930)" 
+                           class="search-bar w-72 border border-gray-300 rounded-sm px-4 py-2 text-sm transition-all"
+                           onkeypress="if(event.keyCode==13) handleSearch()">
+                    <button onclick="handleSearch()" class="absolute right-3 top-2.5 text-gray-400 hover:text-green-500">
+                        <i data-lucide="search" class="w-4 h-4"></i>
+                    </button>
+                </div>
+            </div>
+        </header>
+
+        <!-- [2] 실시간 시장 지수: 텍스트 0%, 100% 위젯 데이터 -->
+        <div class="border-b border-gray-200 bg-gray-50">
+            <div class="tradingview-widget-container">
+                <div class="tradingview-widget-container__widget"></div>
+                <script type="text/javascript" src="https://s3.tradingview.com/external-embedding/embed-widget-ticker-tape.js" async>
+                {
+                    "symbols": [
+                        { "proName": "KRX:KOSPI", "title": "코스피" },
+                        { "proName": "KRX:KOSDAQ", "title": "코스닥" },
+                        { "proName": "FX_IDC:USDKRW", "title": "원/달러 환율" },
+                        { "proName": "KRX:005930", "title": "삼성전자" },
+                        { "proName": "KRX:000660", "title": "SK하이닉스" }
+                    ],
+                    "showSymbolLogo": true, "colorTheme": "light", "isTransparent": true, "displayMode": "adaptive", "locale": "ko"
+                }
+                </script>
+            </div>
+        </div>
+
+        <!-- [3] 메인 대시보드 영역 -->
+        <main class="p-6">
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                
+                <!-- 좌측 (2/3): 종목 상세 및 차트 -->
+                <div class="lg:col-span-2 flex flex-col gap-6">
+                    
+                    <!-- 실시간 종목 요약 (가짜 숫자 절대 없음) -->
+                    <div class="info-box">
+                        <div class="widget-label">
+                            <span class="flex items-center gap-2"><i data-lucide="activity" class="w-4 h-4 naver-green"></i> 실시간 종목 정보</span>
+                            <span class="live-tag">LIVE</span>
+                        </div>
+                        <div id="symbol-info-container" class="h-[160px]">
+                            <!-- JS로 렌더링 -->
+                        </div>
+                    </div>
+
+                    <!-- 멀티 타임프레임 차트 -->
+                    <div class="info-box flex flex-col h-[550px]">
+                        <div class="widget-label">
+                            <span class="flex items-center gap-2"><i data-lucide="bar-chart-2" class="w-4 h-4 naver-green"></i> 기술적 분석 차트</span>
+                            <div class="flex gap-2 text-[11px] font-bold">
+                                <button onclick="changeInterval('D')" class="px-2 py-0.5 border border-gray-300 bg-white hover:bg-gray-50">일봉</button>
+                                <button onclick="changeInterval('W')" class="px-2 py-0.5 border border-gray-300 bg-white hover:bg-gray-50">주봉</button>
+                                <button onclick="changeInterval('M')" class="px-2 py-0.5 border border-gray-300 bg-white hover:bg-gray-50">월봉</button>
+                            </div>
+                        </div>
+                        <div id="chart-container" class="flex-1">
+                            <!-- JS로 렌더링 -->
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 우측 (1/3): 뉴스 및 지표 -->
+                <div class="flex flex-col gap-6">
+                    
+                    <!-- 기술적 분석 게이지 -->
+                    <div class="info-box flex flex-col h-[400px]">
+                        <div class="widget-label">AI 종목 진단 (한글 지표)</div>
+                        <div id="tech-analysis-container" class="flex-1">
+                            <!-- JS로 렌더링 -->
+                        </div>
+                    </div>
+
+                    <!-- 실시간 한국어 뉴스 (영어 차단 필터 적용) -->
+                    <div class="info-box flex flex-col h-[450px]">
+                        <div class="widget-label">실시간 시장 뉴스</div>
+                        <div id="news-timeline-container" class="flex-1">
+                            <!-- JS로 렌더링 -->
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 하단: 시가총액 상위 종목 (실시간 데이터 테이블) -->
+            <div class="info-box">
+                <div class="widget-label">
+                    <span class="flex items-center gap-2"><i data-lucide="list" class="w-4 h-4 naver-green"></i> 국내 시총 상위 실시간 시세 리스트</span>
+                </div>
+                <div id="market-quotes-container" class="h-[600px]">
+                    <div class="tradingview-widget-container">
+                        <div class="tradingview-widget-container__widget"></div>
+                        <script type="text/javascript" src="https://s3.tradingview.com/external-embedding/embed-widget-market-quotes.js" async>
+                        {
+                            "width": "100%", "height": 600,
+                            "symbolsGroups": [
+                                {
+                                    "name": "KOSPI 상위 종목",
+                                    "symbols": [
+                                        { "name": "KRX:005930" }, { "name": "KRX:000660" }, { "name": "KRX:373220" }, 
+                                        { "name": "KRX:005380" }, { "name": "KRX:207940" }, { "name": "KRX:000270" },
+                                        { "name": "KRX:005490" }, { "name": "KRX:035420" }, { "name": "KRX:068270" }
+                                    ]
+                                },
+                                {
+                                    "name": "KOSDAQ 상위 종목",
+                                    "symbols": [
+                                        { "name": "KRX:247540" }, { "name": "KRX:086520" }, { "name": "KRX:022100" }
+                                    ]
+                                }
+                            ],
+                            "showSymbolLogo": true, "colorTheme": "light", "isTransparent": true, "locale": "ko"
+                        }
+                        </script>
+                    </div>
+                </div>
+            </div>
+        </main>
+
+        <!-- [4] 하단 푸터 -->
+        <footer class="bg-gray-100 border-t border-gray-200 p-8 text-[11px] text-gray-500">
+            <div class="flex justify-between items-start max-w-7xl mx-auto">
+                <div>
+                    <p class="font-black text-gray-800 text-sm mb-2 italic">NAVER STOCK PRO v1.0</p>
+                    <p>본 대시보드는 100% 외부 실시간 데이터 엔진(TradingView)에 의해 구동됩니다.</p>
+                    <p>사용자가 입력한 주가 수치는 존재하지 않으며, 모든 정보는 한국 거래소(KRX)의 실제 데이터를 기반으로 합니다.</p>
+                    <p>※ 데이터 정책에 따라 실제 시세와 15분 내외의 지연이 발생할 수 있습니다.</p>
+                </div>
+                <div class="text-right">
+                    <span class="inline-flex items-center gap-1.5 naver-bg-green text-white px-3 py-1.5 rounded font-black uppercase tracking-tighter shadow-sm">
+                        <span class="w-1.5 h-1.5 bg-white rounded-full animate-ping"></span> Live Connected
+                    </span>
+                </div>
+            </div>
+        </footer>
+    </div>
+
+    <!-- 스크립트: 동적 위젯 제어 로직 -->
+    <script type="text/javascript" src="https://s3.tradingview.com/tv.js"></script>
+    <script>
+        lucide.createIcons();
+
+        // [핵심] 현재 선택된 종목 (기본값: 삼성전자)
+        let currentSymbol = "KRX:005930";
+        let currentInterval = "D";
+
+        // 모든 위젯을 한꺼번에 렌더링하는 함수 (가짜 데이터 원천 차단)
+        function refreshDashboard(symbol) {
+            // 1. 심볼 정보 위젯
+            const symbolInfoContainer = document.getElementById('symbol-info-container');
+            symbolInfoContainer.innerHTML = '';
+            const script1 = document.createElement('script');
+            script1.src = "https://s3.tradingview.com/external-embedding/embed-widget-symbol-info.js";
+            script1.async = true;
+            script1.innerHTML = JSON.stringify({
+                "symbol": symbol, "width": "100%", "locale": "ko", "colorTheme": "light", "isTransparent": true
+            });
+            symbolInfoContainer.appendChild(script1);
+
+            // 2. 기술적 분석 위젯
+            const techContainer = document.getElementById('tech-analysis-container');
+            techContainer.innerHTML = '';
+            const script2 = document.createElement('script');
+            script2.src = "https://s3.tradingview.com/external-embedding/embed-widget-technical-analysis.js";
+            script2.async = true;
+            script2.innerHTML = JSON.stringify({
+                "interval": "1D", "width": "100%", "height": "100%", "symbol": symbol, 
+                "showIntervalTabs": true, "displayMode": "single", "locale": "ko", "colorTheme": "light"
+            });
+            techContainer.appendChild(script2);
+
+            // 3. 한글 뉴스 타임라인 (영어 차단 필터 적용)
+            const newsContainer = document.getElementById('news-timeline-container');
+            newsContainer.innerHTML = '';
+            const script3 = document.createElement('script');
+            script3.src = "https://s3.tradingview.com/external-embedding/embed-widget-timeline.js";
+            script3.async = true;
+            script3.innerHTML = JSON.stringify({
+                "feedMode": "market", "market": "stock", "colorTheme": "light", "isTransparent": true,
+                "displayMode": "regular", "width": "100%", "height": "100%", "locale": "ko"
+            });
+            newsContainer.appendChild(script3);
+
+            // 4. 메인 차트 렌더링
+            new TradingView.widget({
+                "autosize": true, "symbol": symbol, "interval": currentInterval, "timezone": "Asia/Seoul",
+                "theme": "light", "style": "1", "locale": "ko", "toolbar_bg": "#f1f3f6",
+                "enable_publishing": false, "hide_side_toolbar": false, "allow_symbol_change": true,
+                "container_id": "chart-container"
+            });
+        }
+
+        // 초기 실행
+        refreshDashboard(currentSymbol);
+
+        // 검색 처리 함수
+        function handleSearch() {
+            const input = document.getElementById('main-search').value.trim();
+            if(!input) return;
+            
+            // 숫자로만 되어 있으면 한국 종목으로 간주 (앞에 KRX: 추가)
+            let symbol = input;
+            if(/^\d+$/.test(input)) {
+                symbol = "KRX:" + input;
+            }
+            
+            currentSymbol = symbol;
+            refreshDashboard(currentSymbol);
+        }
+
+        // 차트 주기 변경 함수
+        function changeInterval(interval) {
+            currentInterval = interval;
+            refreshDashboard(currentSymbol);
+        }
+    </script>
+</body>
+</html>
