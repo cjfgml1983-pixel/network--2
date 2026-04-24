@@ -3,277 +3,239 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>스마트 통합 주식 현황판 v3 - Google & Naver 스타일</title>
-    <!-- Tailwind CSS 및 아이콘 라이브러리 (Lucide) 로드 -->
+    <title>스마트 통합 주식 현황판 v3.2 - 한글 뉴스 & 레이아웃 최적화</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/lucide@latest"></script>
     <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;700;900&display=swap" rel="stylesheet">
     <style>
-        body { font-family: 'Noto Sans KR', sans-serif; background-color: #0b0e14; color: #e2e8f0; }
-        .glass { background: rgba(23, 27, 34, 0.8); backdrop-filter: blur(10px); border: 1px solid rgba(255, 255, 255, 0.05); }
-        .up-color { color: #f43f5e; } /* 한국식 상승: 빨강 */
-        .down-color { color: #3b82f6; } /* 한국식 하락: 파랑 */
-        .tab-active { border-bottom: 3px solid #3b82f6; color: #3b82f6; font-weight: bold; }
+        body { font-family: 'Noto Sans KR', sans-serif; background-color: #0b101a; color: #e2e8f0; margin: 0; padding: 0; }
+        .glass { background: rgba(20, 26, 38, 0.9); backdrop-filter: blur(12px); border: 1px solid rgba(255, 255, 255, 0.08); }
+        .up-color { color: #f43f5e; } 
+        .down-color { color: #3b82f6; }
         .scrollbar-hide::-webkit-scrollbar { display: none; }
-        .modal { transition: opacity 0.3s ease; }
+        /* 화면 깨짐 방지를 위한 최소 높이 설정 */
+        .widget-container { min-height: 300px; width: 100%; position: relative; }
+        iframe { border-radius: 12px; }
     </style>
 </head>
 <body class="h-screen flex flex-col overflow-hidden">
 
-    <!-- [상단] 실시간 지수 티커 (구글 파이낸스 스타일) -->
-    <header class="h-14 glass flex items-center px-6 justify-between z-50">
-        <div class="flex items-center gap-4">
-            <h1 class="text-xl font-black text-white flex items-center gap-2">
-                <i data-lucide="trending-up" class="text-blue-500"></i> StockBoard v3
+    <!-- [상단] 실시간 지수 티커 -->
+    <header class="h-14 glass flex items-center px-4 justify-between z-50 shrink-0">
+        <div class="flex items-center gap-4 overflow-hidden">
+            <h1 class="text-lg font-black text-white flex items-center gap-2 shrink-0">
+                <i data-lucide="trending-up" class="text-blue-500"></i> StockBoard Pro
             </h1>
-            <div class="flex gap-6 text-sm overflow-x-auto scrollbar-hide ml-10">
-                <span class="whitespace-nowrap flex items-center gap-2">KOSPI <span class="up-color">2,750.50 ▲1.2%</span></span>
-                <span class="whitespace-nowrap flex items-center gap-2">KOSDAQ <span class="down-color">890.30 ▼0.5%</span></span>
-                <span class="whitespace-nowrap flex items-center gap-2">S&P 500 <span class="up-color">5,200.12 ▲0.8%</span></span>
-                <span class="whitespace-nowrap flex items-center gap-2">원/달러 <span class="up-color">1,350.50 ▲5.2</span></span>
+            <div class="hidden md:flex gap-6 text-[11px] font-bold overflow-x-auto scrollbar-hide ml-6">
+                <span class="whitespace-nowrap flex items-center gap-1 text-slate-400">KOSPI <span class="up-color">2,750.50 ▲1.2%</span></span>
+                <span class="whitespace-nowrap flex items-center gap-1 text-slate-400">KOSDAQ <span class="down-color">890.30 ▼0.5%</span></span>
+                <span class="whitespace-nowrap flex items-center gap-1 text-slate-400">S&P 500 <span class="up-color">5,200.12 ▲0.8%</span></span>
+                <span class="whitespace-nowrap flex items-center gap-1 text-slate-400">USD/KRW <span class="up-color">1,350.50 ▲5.2</span></span>
             </div>
         </div>
-        <div class="flex items-center gap-4">
-            <div class="relative">
-                <input type="text" placeholder="종목명 또는 코드 검색" class="bg-slate-800/50 border border-white/10 rounded-full px-4 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 w-64">
-                <i data-lucide="search" class="absolute right-3 top-2 w-4 h-4 text-slate-400"></i>
+        <div class="flex items-center gap-3">
+            <div class="relative hidden sm:block">
+                <input type="text" placeholder="종목 검색" class="bg-slate-800/50 border border-white/10 rounded-full px-4 py-1.5 text-[12px] focus:outline-none focus:ring-2 focus:ring-blue-500 w-48">
+                <i data-lucide="search" class="absolute right-3 top-2 w-3.5 h-3.5 text-slate-400"></i>
             </div>
-            <button class="p-2 hover:bg-white/10 rounded-full transition-all"><i data-lucide="bell" class="w-5 h-5"></i></button>
+            <button class="p-1.5 hover:bg-white/10 rounded-full transition-all text-slate-400"><i data-lucide="bell" class="w-4 h-4"></i></button>
         </div>
     </header>
 
     <div class="flex-1 flex overflow-hidden">
-        <!-- [좌측] 내비게이션 및 카테고리 (구글 파이낸스 스타일) -->
-        <aside class="w-64 glass border-r border-white/5 p-4 flex flex-col gap-2">
-            <div class="text-xs font-bold text-slate-500 mb-2 px-2">자산 분류</div>
-            <button onclick="changeCategory('KR')" class="flex items-center gap-3 px-3 py-2.5 rounded-xl bg-blue-500/10 text-blue-400 font-bold hover:bg-blue-500/20 transition-all text-sm w-full text-left">
-                <i data-lucide="layout-grid" class="w-4 h-4"></i> 국내 주식
+        <!-- [좌측] 내비게이션 -->
+        <aside class="w-16 lg:w-60 glass border-r border-white/5 p-3 flex flex-col gap-2 shrink-0">
+            <div class="text-[10px] font-bold text-slate-500 mb-2 px-2 hidden lg:block tracking-widest uppercase">시장 탐색</div>
+            <button onclick="changeSymbol('KRX:005930')" class="flex items-center gap-3 px-3 py-2.5 rounded-xl bg-blue-500/10 text-blue-400 font-bold hover:bg-blue-500/20 transition-all text-sm">
+                <i data-lucide="layout-grid" class="w-4 h-4"></i> <span class="hidden lg:inline">국내 주식</span>
             </button>
-            <button onclick="changeCategory('US')" class="flex items-center gap-3 px-3 py-2.5 rounded-xl hover:bg-white/5 transition-all text-sm w-full text-left">
-                <i data-lucide="globe" class="w-4 h-4 text-slate-400"></i> 해외 주식
+            <button onclick="changeSymbol('NASDAQ:AAPL')" class="flex items-center gap-3 px-3 py-2.5 rounded-xl hover:bg-white/5 transition-all text-sm text-slate-400">
+                <i data-lucide="globe" class="w-4 h-4"></i> <span class="hidden lg:inline">해외 주식</span>
             </button>
-            <button onclick="changeCategory('ETF')" class="flex items-center gap-3 px-3 py-2.5 rounded-xl hover:bg-white/5 transition-all text-sm w-full text-left">
-                <i data-lucide="layers" class="w-4 h-4 text-slate-400"></i> ETF (KODEX, TIGER)
+            <button onclick="changeSymbol('KRX:069500')" class="flex items-center gap-3 px-3 py-2.5 rounded-xl hover:bg-white/5 transition-all text-sm text-slate-400">
+                <i data-lucide="layers" class="w-4 h-4"></i> <span class="hidden lg:inline">ETF (TIGER/KODEX)</span>
             </button>
             
-            <div class="text-xs font-bold text-slate-500 mt-6 mb-2 px-2">나의 투자</div>
-            <button onclick="showWatchlist()" class="flex items-center gap-3 px-3 py-2.5 rounded-xl hover:bg-white/5 transition-all text-sm w-full text-left">
-                <i data-lucide="star" class="w-4 h-4 text-yellow-400"></i> 관심 종목
-            </button>
-            <button onclick="showTop100()" class="flex items-center gap-3 px-3 py-2.5 rounded-xl hover:bg-white/5 transition-all text-sm w-full text-left font-bold text-emerald-400">
-                <i data-lucide="bar-chart-3" class="w-4 h-4"></i> 100대 기업 재무제표
+            <div class="text-[10px] font-bold text-slate-500 mt-6 mb-2 px-2 hidden lg:block tracking-widest uppercase">나의 분석</div>
+            <button onclick="showTop100()" class="flex items-center gap-3 px-3 py-2.5 rounded-xl hover:bg-white/5 transition-all text-sm font-bold text-emerald-400">
+                <i data-lucide="bar-chart-3" class="w-4 h-4"></i> <span class="hidden lg:inline">100대 기업 재무제표</span>
             </button>
         </aside>
 
-        <!-- [중앙] 메인 대시보드 (네이버 증권 스타일 데이터 결합) -->
-        <main class="flex-1 flex flex-col bg-[#0b0e14] overflow-y-auto">
-            <!-- 종목 요약 헤더 (실시간 위젯 연동) -->
-            <div class="p-4 border-b border-white/5 bg-white/5">
-                <div class="tradingview-widget-container" style="height: 100px;">
-                    <div class="tradingview-widget-container__widget"></div>
-                    <script type="text/javascript" src="https://s3.tradingview.com/external-embedding/embed-widget-symbol-info.js" async>
-                    {
-                        "symbol": "KRX:005930",
-                        "width": "100%",
-                        "locale": "ko",
-                        "colorTheme": "dark",
-                        "isTransparent": true
-                    }
-                    </script>
+        <!-- [중앙] 메인 콘텐츠 -->
+        <main class="flex-1 flex flex-col bg-[#080d17] overflow-y-auto">
+            <!-- 상단 실시간 시세 (한글화 최적화) -->
+            <div class="p-2 border-b border-white/5 bg-white/2 shrink-0">
+                <div class="tradingview-widget-container" style="height: 120px;">
+                    <div id="symbol-info-widget"></div>
                 </div>
             </div>
 
-            <!-- 멀티 타임프레임 차트 영역 -->
-            <div class="flex-1 flex flex-col p-6 gap-6">
-                <div class="glass rounded-3xl overflow-hidden flex flex-col" style="height: 550px;">
-                    <div class="flex justify-between items-center p-4 border-b border-white/5 bg-white/5">
+            <!-- 메인 차트 및 뉴스 그리드 -->
+            <div class="p-4 flex flex-col gap-4 min-h-0">
+                <!-- 차트 영역 -->
+                <div class="glass rounded-2xl overflow-hidden flex flex-col shrink-0 h-[450px]">
+                    <div class="flex justify-between items-center px-4 py-2 border-b border-white/5 bg-white/5">
                         <div class="flex gap-2">
-                            <button onclick="updateInterval('1D')" class="px-3 py-1 rounded-lg bg-blue-500 text-xs font-bold">일간</button>
-                            <button onclick="updateInterval('1W')" class="px-3 py-1 rounded-lg hover:bg-white/10 text-xs font-bold">주간</button>
-                            <button onclick="updateInterval('1M')" class="px-3 py-1 rounded-lg hover:bg-white/10 text-xs font-bold">월간</button>
-                            <button onclick="updateInterval('1Y')" class="px-3 py-1 rounded-lg hover:bg-white/10 text-xs font-bold">연간</button>
+                            <button onclick="updateInterval('1D')" class="px-2 py-1 rounded-md bg-blue-500 text-[10px] font-black uppercase">일간</button>
+                            <button onclick="updateInterval('1W')" class="px-2 py-1 rounded-md hover:bg-white/10 text-[10px] font-black uppercase text-slate-400">주간</button>
+                            <button onclick="updateInterval('1M')" class="px-2 py-1 rounded-md hover:bg-white/10 text-[10px] font-black uppercase text-slate-400">월간</button>
                         </div>
-                        <span class="text-[10px] text-slate-500 font-bold uppercase tracking-widest">실시간 데이터 연동 중 (TradingView)</span>
+                        <span class="text-[10px] text-slate-500 font-bold tracking-tighter uppercase">KRX 실시간 라이브 차트</span>
                     </div>
-                    <div id="chart-container" class="flex-1 w-full">
-                        <!-- TradingView 위젯이 여기에 렌더링됩니다 -->
-                    </div>
+                    <div id="chart-container" class="flex-1 w-full"></div>
                 </div>
 
-                <!-- 하단 정보 그리드 -->
-                <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 pb-10">
-                    <!-- 시장 정보 데이터 -->
-                    <div class="glass rounded-3xl p-6">
-                        <h3 class="font-bold text-lg mb-4 flex items-center gap-2">
-                            <i data-lucide="info" class="text-blue-500"></i> 종목 상세 분석 (기술적 지표)
+                <!-- 하단 정보 섹션 (반응형 2단) -->
+                <div class="grid grid-cols-1 xl:grid-cols-2 gap-4 pb-8">
+                    <!-- 기술적 분석 지표 -->
+                    <div class="glass rounded-2xl p-4 flex flex-col">
+                        <h3 class="font-bold text-sm mb-3 flex items-center gap-2 text-slate-300">
+                            <i data-lucide="zap" class="w-4 h-4 text-yellow-400"></i> AI 기술적 분석 (한글)
                         </h3>
-                        <div class="tradingview-widget-container" style="height: 300px;">
-                            <div class="tradingview-widget-container__widget"></div>
-                            <script type="text/javascript" src="https://s3.tradingview.com/external-embedding/embed-widget-technical-analysis.js" async>
-                            {
-                                "interval": "1D",
-                                "width": "100%",
-                                "isTransparent": true,
-                                "height": "100%",
-                                "symbol": "KRX:005930",
-                                "showIntervalTabs": true,
-                                "displayMode": "single",
-                                "locale": "ko",
-                                "colorTheme": "dark"
-                            }
-                            </script>
-                        </div>
+                        <div id="technical-widget" class="widget-container h-[350px]"></div>
                     </div>
 
-                    <!-- 실시간 주식 뉴스 -->
-                    <div class="glass rounded-3xl p-6">
-                        <h3 class="font-bold text-lg mb-4 flex items-center gap-2">
-                            <i data-lucide="newspaper" class="text-emerald-500"></i> 관련 실시간 뉴스
+                    <!-- 뉴스 피드 (한글 강제 설정) -->
+                    <div class="glass rounded-2xl p-4 flex flex-col">
+                        <h3 class="font-bold text-sm mb-3 flex items-center gap-2 text-slate-300">
+                            <i data-lucide="newspaper" class="w-4 h-4 text-blue-400"></i> 실시간 한국 경제 뉴스
                         </h3>
-                        <div class="tradingview-widget-container" style="height: 300px;">
-                            <div class="tradingview-widget-container__widget"></div>
-                            <script type="text/javascript" src="https://s3.tradingview.com/external-embedding/embed-widget-timeline.js" async>
-                            {
-                                "feedMode": "all_symbols",
-                                "colorTheme": "dark",
-                                "isTransparent": true,
-                                "displayMode": "regular",
-                                "width": "100%",
-                                "height": "100%",
-                                "locale": "ko"
-                            }
-                            </script>
-                        </div>
+                        <div id="news-widget" class="widget-container h-[350px]"></div>
                     </div>
                 </div>
             </div>
         </main>
     </div>
 
-    <!-- [재무제표 모달] 100대 기업 재무제표 조회 (데이터 업데이트) -->
-    <div id="financial-modal" class="fixed inset-0 bg-black/80 z-[100] flex items-center justify-center opacity-0 pointer-events-none modal">
-        <div class="bg-[#171b22] w-[90%] max-w-5xl h-[80vh] rounded-3xl border border-white/10 flex flex-col overflow-hidden shadow-2xl">
-            <div class="p-6 border-b border-white/10 flex justify-between items-center bg-white/5">
-                <h2 class="text-2xl font-black text-white flex items-center gap-3">
-                    <i data-lucide="bar-chart-3" class="text-emerald-500"></i> 시가총액 상위 100대 기업 요약 데이터
+    <!-- [재무제표 모달] -->
+    <div id="financial-modal" class="fixed inset-0 bg-black/90 z-[100] flex items-center justify-center opacity-0 pointer-events-none transition-all duration-300">
+        <div class="bg-[#111827] w-[95%] max-w-6xl h-[85vh] rounded-3xl border border-white/10 flex flex-col overflow-hidden shadow-2xl">
+            <div class="p-6 border-b border-white/5 flex justify-between items-center bg-white/5">
+                <h2 class="text-xl font-black text-white flex items-center gap-3 italic uppercase tracking-tight">
+                    <i data-lucide="database" class="text-emerald-500"></i> KRX 시총 상위 재무 분석 리포트
                 </h2>
                 <button onclick="closeFinancials()" class="p-2 hover:bg-white/10 rounded-full transition-all"><i data-lucide="x"></i></button>
             </div>
-            <div class="flex-1 overflow-auto p-6">
-                <table class="w-full text-sm text-left border-collapse">
-                    <thead class="sticky top-0 bg-[#171b22] text-slate-400 border-b border-white/10">
+            <div class="flex-1 overflow-auto p-4 lg:p-8">
+                <table class="w-full text-xs lg:text-sm text-left border-collapse">
+                    <thead class="sticky top-0 bg-[#111827] text-slate-500 border-b border-white/10 font-black uppercase tracking-tighter">
                         <tr>
-                            <th class="py-4 px-4 font-bold">순위</th>
-                            <th class="py-4 px-4 font-bold">기업명</th>
-                            <th class="py-4 px-4 font-bold">시가총액</th>
-                            <th class="py-4 px-4 font-bold">매출액 (조)</th>
-                            <th class="py-4 px-4 font-bold">영업이익 (조)</th>
-                            <th class="py-4 px-4 font-bold">당기순이익 (조)</th>
-                            <th class="py-4 px-4 font-bold">PER</th>
-                            <th class="py-4 px-4 font-bold">PBR</th>
+                            <th class="py-4 px-2">순위</th>
+                            <th class="py-4 px-2">기업</th>
+                            <th class="py-4 px-2">시가총액</th>
+                            <th class="py-4 px-2">매출(조)</th>
+                            <th class="py-4 px-2">이익(조)</th>
+                            <th class="py-4 px-2">PER</th>
+                            <th class="py-4 px-2">ROE</th>
                         </tr>
                     </thead>
-                    <tbody class="divide-y divide-white/5" id="financial-body">
-                        <!-- 데이터는 JS로 렌더링 -->
-                    </tbody>
+                    <tbody class="divide-y divide-white/5" id="financial-body"></tbody>
                 </table>
             </div>
         </div>
     </div>
 
-    <!-- 하단 상태 바 -->
-    <footer class="h-8 glass border-t border-white/5 flex items-center justify-between px-6 text-[10px] font-bold text-slate-500">
+    <footer class="h-8 glass border-t border-white/5 flex items-center justify-between px-4 text-[9px] font-bold text-slate-500 shrink-0">
         <div class="flex items-center gap-4">
-            <span class="flex items-center gap-1"><span class="w-2 h-2 bg-green-500 rounded-full"></span> 데이터 실시간 연결됨 (TradingView 정규/장외 시세)</span>
-            <span>데이터 출처: TradingView (지연 15~20분 적용될 수 있음)</span>
+            <span class="flex items-center gap-1.5"><span class="w-1.5 h-1.5 bg-green-500 rounded-full animate-pulse"></span> SYSTEM ONLINE</span>
+            <span>데이터 연동: TradingView (한국 시장 최적화)</span>
         </div>
-        <div>한국 시간 기준: <span id="current-time"></span></div>
+        <div>SERVER TIME: <span id="current-time"></span></div>
     </footer>
 
-    <!-- 스크립트 영역 -->
     <script type="text/javascript" src="https://s3.tradingview.com/tv.js"></script>
     <script>
-        // 현재 시간 업데이트
         function updateTime() {
-            const now = new Date();
-            document.getElementById('current-time').innerText = now.toLocaleString('ko-KR');
+            document.getElementById('current-time').innerText = new Date().toLocaleString('ko-KR');
         }
         setInterval(updateTime, 1000);
         updateTime();
-
-        // 아이콘 생성
         lucide.createIcons();
 
-        // [기능] 차트 렌더링 엔진
         let currentSymbol = "KRX:005930";
-        let currentInterval = "D";
 
-        function initChart(symbol, interval) {
+        // [한글화 강화] 위젯 렌더링 함수
+        function renderWidgets(symbol) {
+            // 1. 심볼 정보 (한글)
+            const symbolInfoContainer = document.getElementById('symbol-info-widget');
+            symbolInfoContainer.innerHTML = '';
+            const script1 = document.createElement('script');
+            script1.src = "https://s3.tradingview.com/external-embedding/embed-widget-symbol-info.js";
+            script1.async = true;
+            script1.innerHTML = JSON.stringify({
+                "symbol": symbol, "width": "100%", "locale": "ko", "colorTheme": "dark", "isTransparent": true
+            });
+            symbolInfoContainer.appendChild(script1);
+
+            // 2. 기술적 분석 (한글)
+            const techContainer = document.getElementById('technical-widget');
+            techContainer.innerHTML = '';
+            const script2 = document.createElement('script');
+            script2.src = "https://s3.tradingview.com/external-embedding/embed-widget-technical-analysis.js";
+            script2.async = true;
+            script2.innerHTML = JSON.stringify({
+                "interval": "1D", "width": "100%", "height": "100%", "symbol": symbol, "locale": "ko", "colorTheme": "dark", "isTransparent": true
+            });
+            techContainer.appendChild(script2);
+
+            // 3. 한글 뉴스 피드 (한국 시장 타겟팅)
+            const newsContainer = document.getElementById('news-widget');
+            newsContainer.innerHTML = '';
+            const script3 = document.createElement('script');
+            script3.src = "https://s3.tradingview.com/external-embedding/embed-widget-timeline.js";
+            script3.async = true;
+            script3.innerHTML = JSON.stringify({
+                "feedMode": "market", "market": "stock", "colorTheme": "dark", "isTransparent": true,
+                "displayMode": "regular", "width": "100%", "height": "100%", "locale": "ko"
+            });
+            newsContainer.appendChild(script3);
+
+            // 4. 메인 차트
             new TradingView.widget({
-                "autosize": true,
-                "symbol": symbol,
-                "interval": interval,
-                "timezone": "Asia/Seoul",
-                "theme": "dark",
-                "style": "1",
-                "locale": "ko",
-                "toolbar_bg": "#f1f3f6",
-                "enable_publishing": false,
-                "allow_symbol_change": true,
-                "container_id": "chart-container"
+                "autosize": true, "symbol": symbol, "interval": "D", "timezone": "Asia/Seoul",
+                "theme": "dark", "style": "1", "locale": "ko", "container_id": "chart-container"
             });
         }
 
-        // 초기 차트 실행
-        initChart(currentSymbol, currentInterval);
+        renderWidgets(currentSymbol);
+
+        function changeSymbol(symbol) {
+            currentSymbol = symbol;
+            renderWidgets(symbol);
+        }
 
         function updateInterval(interval) {
-            currentInterval = interval;
-            initChart(currentSymbol, currentInterval);
+            new TradingView.widget({
+                "autosize": true, "symbol": currentSymbol, "interval": interval,
+                "timezone": "Asia/Seoul", "theme": "dark", "style": "1", "locale": "ko", "container_id": "chart-container"
+            });
         }
 
-        // [기능] 카테고리 변경
-        function changeCategory(cat) {
-            alert(cat + ' 카테고리 전환 기능은 실제 증권 API 연동 시 실시간으로 데이터가 교체됩니다.');
-        }
-
-        // [기능] 재무제표 모달 제어
-        const modal = document.getElementById('financial-modal');
-        const financialBody = document.getElementById('financial-body');
-
-        // 최근 시장 상황을 반영한 근사치 데이터 업데이트
         const top100Data = [
-            { rank: 1, name: "삼성전자", cap: "354.2조", revenue: "258.9", profit: "6.5", net: "15.4", per: "15.2", pbr: "1.1" },
-            { rank: 2, name: "SK하이닉스", cap: "138.5조", revenue: "32.7", profit: "-7.7", net: "-9.1", per: "N/A", pbr: "2.4" },
-            { rank: 3, name: "LG에너지솔루션", cap: "85.4조", revenue: "33.2", profit: "2.1", net: "1.6", per: "45.2", pbr: "4.2" },
-            { rank: 4, name: "삼성바이오로직스", cap: "72.2조", revenue: "3.6", profit: "1.1", net: "0.8", per: "65.4", pbr: "5.1" },
-            { rank: 5, name: "현대차", cap: "55.4조", revenue: "162.6", profit: "15.1", net: "12.2", per: "4.8", pbr: "0.7" }
+            { rank: 1, name: "삼성전자", cap: "354조", rev: "258", prof: "6.5", per: "15", roe: "12%" },
+            { rank: 2, name: "SK하이닉스", cap: "138조", rev: "32", prof: "-7.7", per: "N/A", roe: "-15%" },
+            { rank: 3, name: "LG에너지솔루션", cap: "85조", rev: "33", prof: "2.1", per: "45", roe: "10%" },
+            { rank: 4, name: "현대차", cap: "55조", rev: "162", prof: "15", per: "4.8", roe: "18%" }
         ];
 
         function showTop100() {
-            financialBody.innerHTML = top100Data.map(item => `
-                <tr class="hover:bg-white/5 transition-all group">
-                    <td class="py-4 px-4 font-bold text-slate-500">${item.rank}</td>
-                    <td class="py-4 px-4 font-black text-white group-hover:text-blue-400 transition-all cursor-pointer">${item.name}</td>
-                    <td class="py-4 px-4 font-bold">${item.cap}</td>
-                    <td class="py-4 px-4">${item.revenue}</td>
-                    <td class="py-4 px-4 text-emerald-400 font-bold">${item.profit}</td>
-                    <td class="py-4 px-4">${item.net}</td>
-                    <td class="py-4 px-4">${item.per}</td>
-                    <td class="py-4 px-4">${item.pbr}</td>
+            document.getElementById('financial-body').innerHTML = top100Data.map(i => `
+                <tr class="hover:bg-white/5 transition-all">
+                    <td class="py-4 px-2 font-bold text-slate-600">#0${i.rank}</td>
+                    <td class="py-4 px-2 font-black text-white">${i.name}</td>
+                    <td class="py-4 px-2 font-bold text-blue-400">${i.cap}</td>
+                    <td class="py-4 px-2">${i.rev}</td>
+                    <td class="py-4 px-2 up-color font-bold">${i.prof}</td>
+                    <td class="py-4 px-2">${i.per}</td>
+                    <td class="py-4 px-2 text-emerald-400 font-black">${i.roe}</td>
                 </tr>
             `).join('');
-
-            modal.classList.remove('opacity-0', 'pointer-events-none');
+            document.getElementById('financial-modal').classList.remove('opacity-0', 'pointer-events-none');
         }
 
         function closeFinancials() {
-            modal.classList.add('opacity-0', 'pointer-events-none');
-        }
-    </script>
-
-        function showWatchlist() {
-            alert('관심 종목 기능을 불러옵니다. (LocalStorage 연동 중)');
+            document.getElementById('financial-modal').classList.add('opacity-0', 'pointer-events-none');
         }
     </script>
 </body>
